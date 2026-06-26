@@ -1,0 +1,63 @@
+services:
+  # openFDA wrapper. Holds the openFDA API key. NOT exposed publicly —
+  # only the agent reaches it, over the internal compose network.
+  mcp_server:
+    build: ./mcp_server
+    environment:
+      OPENFDA_API_KEY: ${OPENFDA_API_KEY:-}
+    expose:
+      - "8000"
+    healthcheck:
+      # python urllib, not curl — the slim base image has no curl/wget.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - internal
+
+  # LangGraph agent. Holds the LLM (OpenRouter) key. Talks to the MCP server
+  # over the internal network and serves /chat to the frontend.
+  agent:
+    build: ./agent
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?set OPENROUTER_API_KEY in .env}
+      AGENT_MODEL: ${AGENT_MODEL:-anthropic/claude-sonnet-4.5}
+      MCP_SERVER_URL: http://mcp_server:8000/mcp
+    ports:
+      - "8001:8001"  # exposed for local testing/curl; no secrets are returned
+    depends_on:
+      mcp_server:
+        condition: service_healthy  # wait until MCP is actually reachable
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s  # the agent connects to MCP + loads tools at startup
+    networks:
+      - internal
+
+  # Thin Streamlit client. No secrets. The only publicly browsable service.
+  frontend:
+    build: ./frontend
+    environment:
+      AGENT_URL: http://agent:8001
+    ports:
+      - "8501:8501"
+    depends_on:
+      agent:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
