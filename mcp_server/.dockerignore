@@ -1,0 +1,13 @@
+# Keep the runtime image lean. Note: smoke_test.py is intentionally KEPT — it
+# uses only runtime deps (fda_client + httpx), so it can validate openFDA
+# connectivity from inside the container. Unit tests need pytest (a dev dep),
+# so they're excluded from the image and run locally instead.
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+.DS_Store
+test_tools.py
+requirements-dev.txt
