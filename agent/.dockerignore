@@ -1,0 +1,7 @@
+# Keep the runtime image lean and free of local dev artifacts.
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.DS_Store
