@@ -23,12 +23,11 @@ Three independently deployable services, each in its own folder:
 
 The **security boundary** is the point: each secret exists only in its own
 service's environment. The LLM never sees the openFDA key; the frontend has no
-secrets at all; the MCP server is never published — only the agent reaches it
-over the internal Docker network.
+secrets at all;
 
 ## The tools
 
-Tools are **atomic** — one per openFDA endpoint — and the agent composes them.
+Tools are **atomic** .one per openFDA endpoint and the agent composes them.
 That is deliberate: keeping intelligence in the model (not in a fat
 `compare_drugs` function) is what makes the system agentic.
 
